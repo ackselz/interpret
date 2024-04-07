@@ -1,2 +1,4 @@
 Archive
 Logs
+*.zip
+.DS_Store
