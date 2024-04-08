@@ -1,3 +1,22 @@
+## Quick Start
+
+macOS
+```
+python3 raspberry_pi/recognize.py \
+    --model Models/20240407_gesture_recognizer_4.task \
+    --numHands 2 \
+    --minHandDetectionConfidence 0.5 \
+```
+
+Raspberry Pi + ESP32CAM
+```
+python3 raspberry_pi/recognize.py \
+    --model Models/20240407_gesture_recognizer_4.task \
+    --numHands 2 \
+    --minHandDetectionConfidence 0.5 \
+    --camerId 'http://192.168.51.18:81/stream'
+```
+
 # MediaPipe Gesture Recognizer example with Raspberry Pi
 
 This example uses [MediaPipe](https://github.com/google/mediapipe) with Python on

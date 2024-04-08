@@ -36,6 +36,7 @@ mp_drawing_styles = mp.solutions.drawing_styles
 # Global variables to calculate FPS
 COUNTER, FPS = 0, 0
 START_TIME = time.time()
+CONSENSUS_WINDOW = 30
 
 class TTSThread(threading.Thread):
     """
@@ -139,17 +140,22 @@ def run(model: str, num_hands: int,
       recognition_result_list.append(result)
       COUNTER += 1
 
-  consensus = deque(maxlen=30)
+  consensus = deque(maxlen=CONSENSUS_WINDOW)
   tts_queue = queue.Queue()
   words = []
 
   def process_result(category_name):
-      if category_name == "none":
+      if category_name == '' or category_name == 'none':
          return
+      
       consensus.append(category_name)
+      if len(consensus) != CONSENSUS_WINDOW:
+         return
+      
       if len(set(consensus)) == 1:
         if words and words[-1] == category_name:
             return
+        
         words.append(category_name)
         tts_queue.put(category_name)
 
@@ -312,10 +318,12 @@ def main():
       default=480)
   args = parser.parse_args()
 
-  run(args.model, int(args.numHands), args.minHandDetectionConfidence,
-      args.minHandPresenceConfidence, args.minTrackingConfidence,
-      int(args.cameraId), args.frameWidth, args.frameHeight)
+  if not (isinstance(args.cameraId, str) and str.startswith('http')):
+    args.cameraId = int(args.cameraId)
 
+  run(args.model, int(args.numHands), float(args.minHandDetectionConfidence),
+      args.minHandPresenceConfidence, args.minTrackingConfidence,
+      args.cameraId, args.frameWidth, args.frameHeight)
 
 if __name__ == '__main__':
   main()
