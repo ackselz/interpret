@@ -1,2 +1,4 @@
 mediapipe==0.10.9
 opencv-python
+pyobjc==9.0.1
+pyttsx3

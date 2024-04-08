@@ -17,6 +17,12 @@ import argparse
 import sys
 import time
 
+from collections import deque
+
+import queue
+import threading
+import pyttsx3
+
 import cv2
 import mediapipe as mp
 
@@ -27,11 +33,58 @@ mp_hands = mp.solutions.hands
 mp_drawing = mp.solutions.drawing_utils
 mp_drawing_styles = mp.solutions.drawing_styles
 
-
 # Global variables to calculate FPS
 COUNTER, FPS = 0, 0
 START_TIME = time.time()
 
+class TTSThread(threading.Thread):
+    """
+    A thread-safe class for handling text-to-speech (TTS) functionality.
+    """
+
+    def __init__(self, queue):
+        """
+        Initialize the TTSThread object.
+        """
+        super().__init__()
+        self.queue = queue
+        self.daemon = True
+        self.tts_engine = pyttsx3.init()
+        self.tts_engine.startLoop(False)
+        self.stop_event = threading.Event()
+        self.start()
+
+    def run(self):
+        """
+        Run the thread's main loop.
+        """
+        while not self.stop_event.is_set():
+            try:
+                data = self.queue.get(block=True, timeout=0.1)
+                self.tts_engine.say(data)
+                self.tts_engine.iterate()
+            except queue.Empty:
+                self.tts_engine.iterate()
+            except Exception as e:
+                print(f"Error in TTSThread: {e}")
+
+        self.tts_engine.endLoop()
+
+    def say(self, text):
+        """
+        Add text to the queue for text-to-speech conversion.
+
+        Args:
+            text (str): The text to be converted to speech.
+        """
+        self.queue.put(text)
+
+    def stop(self):
+        """
+        Stop the TTSThread by setting the stop event.
+        """
+        self.stop_event.set()
+        self.join()
 
 def run(model: str, num_hands: int,
         min_hand_detection_confidence: float,
@@ -85,6 +138,22 @@ def run(model: str, num_hands: int,
 
       recognition_result_list.append(result)
       COUNTER += 1
+
+  consensus = deque(maxlen=30)
+  tts_queue = queue.Queue()
+  words = []
+
+  def process_result(category_name):
+      if category_name == "none":
+         return
+      consensus.append(category_name)
+      if len(set(consensus)) == 1:
+        if words and words[-1] == category_name:
+            return
+        words.append(category_name)
+        tts_queue.put(category_name)
+
+  tts_thread = TTSThread(tts_queue)
 
   # Initialize the gesture recognizer model
   base_options = python.BaseOptions(model_asset_path=model)
@@ -143,6 +212,8 @@ def run(model: str, num_hands: int,
           score = round(gesture[0].score, 2)
           result_text = f'{category_name} ({score})'
 
+          process_result(category_name)
+
           # Compute text size
           text_size = \
           cv2.getTextSize(result_text, cv2.FONT_HERSHEY_DUPLEX, label_font_size,
@@ -178,7 +249,7 @@ def run(model: str, num_hands: int,
 
       recognition_frame = current_frame
       recognition_result_list.clear()
-
+    
     if recognition_frame is not None:
         cv2.imshow('gesture_recognition', recognition_frame)
 
@@ -190,6 +261,7 @@ def run(model: str, num_hands: int,
   cap.release()
   cv2.destroyAllWindows()
 
+  tts_thread.stop()
 
 def main():
   parser = argparse.ArgumentParser(
