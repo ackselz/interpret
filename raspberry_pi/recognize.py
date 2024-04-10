@@ -23,12 +23,15 @@ import queue
 import threading
 import pyttsx3
 
+import websocket
+
 import cv2
 import mediapipe as mp
 
 from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
 from mediapipe.framework.formats import landmark_pb2
+
 mp_hands = mp.solutions.hands
 mp_drawing = mp.solutions.drawing_utils
 mp_drawing_styles = mp.solutions.drawing_styles
@@ -36,7 +39,6 @@ mp_drawing_styles = mp.solutions.drawing_styles
 # Global variables to calculate FPS
 COUNTER, FPS = 0, 0
 START_TIME = time.time()
-CONSENSUS_WINDOW = 30
 
 class TTSThread(threading.Thread):
     """
@@ -90,7 +92,7 @@ class TTSThread(threading.Thread):
 def run(model: str, num_hands: int,
         min_hand_detection_confidence: float,
         min_hand_presence_confidence: float, min_tracking_confidence: float,
-        camera_id: int, width: int, height: int) -> None:
+        camera_id: str | int, width: int, height: int, consensus_window: int) -> None:
   """Continuously run inference on images acquired from the camera.
 
   Args:
@@ -140,7 +142,7 @@ def run(model: str, num_hands: int,
       recognition_result_list.append(result)
       COUNTER += 1
 
-  consensus = deque(maxlen=CONSENSUS_WINDOW)
+  consensus = deque(maxlen=consensus_window)
   tts_queue = queue.Queue()
   words = []
 
@@ -149,7 +151,7 @@ def run(model: str, num_hands: int,
          return
       
       consensus.append(category_name)
-      if len(consensus) != CONSENSUS_WINDOW:
+      if len(consensus) != consensus_window:
          return
       
       if len(set(consensus)) == 1:
@@ -158,6 +160,12 @@ def run(model: str, num_hands: int,
         
         words.append(category_name)
         tts_queue.put(category_name)
+
+        # Send gesture to WebSocket server
+        try:
+            ws.send(category_name) 
+        except Exception as e:
+            print(f"Error sending to WebSocket server: {e}")
 
   tts_thread = TTSThread(tts_queue)
 
@@ -180,7 +188,7 @@ def run(model: str, num_hands: int,
           'ERROR: Unable to read from webcam. Please verify your webcam settings.'
       )
 
-    image = cv2.flip(image, 1)
+    # image = cv2.flip(image, 1)
 
     # Convert the image from BGR to RGB as required by the TFLite model.
     rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
@@ -269,6 +277,15 @@ def run(model: str, num_hands: int,
 
   tts_thread.stop()
 
+WEBSOCKET_SERVER_URL = "ws://localhost:8001" 
+
+# Initialize the WebSocket connection 
+def initialize_websocket():
+    global ws  # Make the websocket object accessible
+
+    ws = websocket.WebSocket()
+    ws.connect(WEBSOCKET_SERVER_URL)
+
 def main():
   parser = argparse.ArgumentParser(
       formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -316,14 +333,24 @@ def main():
       help='Height of frame to capture from camera.',
       required=False,
       default=480)
+  parser.add_argument(
+      '--consensusWindow',
+      help='Size of the consensus window',
+      required=False,
+      default=5)
   args = parser.parse_args()
 
-  if not (isinstance(args.cameraId, str) and str.startswith('http')):
+  if not (isinstance(args.cameraId, str) and args.cameraId.startswith('http')):
     args.cameraId = int(args.cameraId)
+
+  initialize_websocket()
 
   run(args.model, int(args.numHands), float(args.minHandDetectionConfidence),
       args.minHandPresenceConfidence, args.minTrackingConfidence,
-      args.cameraId, args.frameWidth, args.frameHeight)
+      args.cameraId, args.frameWidth, args.frameHeight, int(args.consensusWindow))
+  
+  if ws.connected:
+     ws.close()
 
 if __name__ == '__main__':
   main()
