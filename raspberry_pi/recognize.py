@@ -41,7 +41,8 @@ mp_drawing_styles = mp.solutions.drawing_styles
 COUNTER, FPS = 0, 0
 START_TIME = time.time()
 
-HOST_NAME = socket.gethostbyname(socket.gethostname())
+# HOST_NAME = socket.gethostbyname(socket.gethostname())
+HOST_NAME = '0.0.0.0'
 PORT = 8001
 
 WEBSOCKET_SERVER_URL = f"ws://{HOST_NAME}:{PORT}" 
