@@ -1,15 +1,36 @@
 ## Quick Start
 
-macOS
-```
-python3 raspberry_pi/recognize.py \
-    --model Models/20240411_gesture_recognizer_4.task
+
+### Websocket Server
+```bash
+# /raspberry_pi
+
+python3 server.py
 ```
 
-Raspberry Pi + ESP32CAM
+### Web Server
+```bash
+# /raspberry_pi
+
+python3 client.py
 ```
+
+### Recognition
+
+#### Webcam
+```bash
+# /raspberry_pi
+
+python3 recognize.py \
+    --model ../Models/20240411_gesture_recognizer_4.task
+```
+
+#### ESP32CAM
+```bash
+# /raspberry_pi
+
 python3 raspberry_pi/recognize.py \
-    --model Models/20240411_gesture_recognizer_4.task
+    --model ../Models/20240411_gesture_recognizer_4.task
     --cameraId 'http://192.168.51.18:81/stream'
 ```
 
