@@ -1,6 +1,7 @@
 from http.server import BaseHTTPRequestHandler, HTTPServer
+import socket
 
-HOST_NAME = "localhost"
+HOST_NAME = socket.gethostbyname(socket.gethostname())
 PORT = 8080
 
 class HTTPHandler(BaseHTTPRequestHandler):
@@ -17,16 +18,30 @@ class HTTPHandler(BaseHTTPRequestHandler):
                     justify-content: center;
                     align-items: center;
                     font-size: 4rem;
+                    font-family: monospace;
+                }
+                #data {
+                    padding: 4rem;
                 }
             </style>
             <body>
                 <div id='data'>></div>
                 <script>
-                    var ws = new WebSocket('ws://localhost:8001');
+                    const pingInterval = setInterval(() => {
+                        ws.send('ping');
+                    }, 30000); // Send a ping message every 30 seconds
+
+                    const ws = new WebSocket('ws://' + location.hostname + ':8001');
 
                     ws.addEventListener('message', ({data}) => {
+                        if (data === 'pong') return;
                         const currentContent = document.getElementById('data').innerHTML;
                         document.getElementById('data').innerHTML = currentContent + ' ' + data;
+                    });
+
+                    // Handle WebSocket close event
+                    ws.addEventListener('close', () => {
+                        clearInterval(pingInterval); // Stop sending ping messages
                     });
                 </script>
             </body>

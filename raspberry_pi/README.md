@@ -3,15 +3,13 @@
 macOS
 ```
 python3 raspberry_pi/recognize.py \
-    --model Models/20240409_gesture_recognizer_3.task \
-    --numHands 2 
+    --model Models/20240411_gesture_recognizer_4.task
 ```
 
 Raspberry Pi + ESP32CAM
 ```
 python3 raspberry_pi/recognize.py \
-    --model Models/20240409_gesture_recognizer_3.task \
-    --numHands 2 \
+    --model Models/20240411_gesture_recognizer_4.task
     --cameraId 'http://192.168.51.18:81/stream'
 ```
 

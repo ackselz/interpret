@@ -1,39 +1,9 @@
-# import asyncio
-# import websockets
-# import random
-
-# # List of words to stream
-# words = ['apple', 'banana', 'cherry', 'date', 'elderberry', 'fig', 'grape']
-
-# async def broadcast_words(websocket, path):
-#     """
-#     Broadcast a stream of words to the connected WebSocket client.
-#     """
-#     try:
-#         while True:
-#             # Pick a random word from the list
-#             word = random.choice(words)
-#             # Send the word to the client
-#             await websocket.send(word)
-#             # Wait for a short period before sending the next word
-#             await asyncio.sleep(1)
-#     except websockets.ConnectionClosedOK:
-#         # Client disconnected, do nothing
-#         pass
-
-# async def main():
-#     """
-#     Start the WebSocket server and listen for incoming connections.
-#     """
-#     async with websockets.serve(broadcast_words, "localhost", 8001):
-#         print("WebSocket server started on localhost:8001")
-#         await asyncio.Future()  # run forever
-
-# if __name__ == "__main__":
-#     asyncio.run(main())
-
 import asyncio
 import websockets
+import socket
+
+HOST_NAME = socket.gethostbyname(socket.gethostname())
+PORT = 8001
 
 # Set to store connected clients
 connected_clients = set()
@@ -50,20 +20,30 @@ async def handle_client(websocket, path):
     Handle a new client connection.
     """
     connected_clients.add(websocket)
+    print('client connected')
     try:
         async for message in websocket:
             # Broadcast the received message to all other clients
-            await broadcast_message(message)
+            if message == 'ping':
+                await websocket.send('pong')
+            else:
+                print('received: ', message)
+                await broadcast_message(message)
     except websockets.ConnectionClosedOK:
         # Client disconnected, remove from the set
+        print('client disconnected')
         connected_clients.remove(websocket)
+    except websockets.ConnectionClosedError:
+        print('client connection timeout')
+        connected_clients.remove(websocket)
+
 
 async def main():
     """
     Start the WebSocket server and listen for incoming connections.
     """
-    async with websockets.serve(handle_client, "localhost", 8001):
-        print("WebSocket server started on localhost:8001")
+    async with websockets.serve(handle_client, HOST_NAME, PORT, ping_timeout=100):
+        print(f"WebSocket server started on {HOST_NAME}:{PORT}")
         await asyncio.Future()  # run forever
 
 if __name__ == "__main__":

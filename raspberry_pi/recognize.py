@@ -24,6 +24,7 @@ import threading
 import pyttsx3
 
 import websocket
+import socket
 
 import cv2
 import mediapipe as mp
@@ -39,6 +40,13 @@ mp_drawing_styles = mp.solutions.drawing_styles
 # Global variables to calculate FPS
 COUNTER, FPS = 0, 0
 START_TIME = time.time()
+
+HOST_NAME = socket.gethostbyname(socket.gethostname())
+PORT = 8001
+
+WEBSOCKET_SERVER_URL = f"ws://{HOST_NAME}:{PORT}" 
+
+ws = websocket.WebSocket()
 
 class TTSThread(threading.Thread):
     """
@@ -92,7 +100,8 @@ class TTSThread(threading.Thread):
 def run(model: str, num_hands: int,
         min_hand_detection_confidence: float,
         min_hand_presence_confidence: float, min_tracking_confidence: float,
-        camera_id: str | int, width: int, height: int, consensus_window: int) -> None:
+        camera_id: str | int, width: int, height: int,
+        consensus_window: int, min_recognition_confidence: int) -> None:
   """Continuously run inference on images acquired from the camera.
 
   Args:
@@ -146,8 +155,11 @@ def run(model: str, num_hands: int,
   tts_queue = queue.Queue()
   words = []
 
-  def process_result(category_name):
+  def process_result(category_name, score):
       if category_name == '' or category_name == 'none':
+         return
+      
+      if score < min_recognition_confidence:
          return
       
       consensus.append(category_name)
@@ -162,10 +174,14 @@ def run(model: str, num_hands: int,
         tts_queue.put(category_name)
 
         # Send gesture to WebSocket server
+        if not ws.connected:
+           ws.connect(WEBSOCKET_SERVER_URL)
+
         try:
             ws.send(category_name) 
         except Exception as e:
             print(f"Error sending to WebSocket server: {e}")
+            ws.shutdown()
 
   tts_thread = TTSThread(tts_queue)
 
@@ -226,7 +242,7 @@ def run(model: str, num_hands: int,
           score = round(gesture[0].score, 2)
           result_text = f'{category_name} ({score})'
 
-          process_result(category_name)
+          process_result(category_name, score)
 
           # Compute text size
           text_size = \
@@ -277,15 +293,6 @@ def run(model: str, num_hands: int,
 
   tts_thread.stop()
 
-WEBSOCKET_SERVER_URL = "ws://localhost:8001" 
-
-# Initialize the WebSocket connection 
-def initialize_websocket():
-    global ws  # Make the websocket object accessible
-
-    ws = websocket.WebSocket()
-    ws.connect(WEBSOCKET_SERVER_URL)
-
 def main():
   parser = argparse.ArgumentParser(
       formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -298,7 +305,7 @@ def main():
       '--numHands',
       help='Max number of hands that can be detected by the recognizer.',
       required=False,
-      default=1)
+      default=2)
   parser.add_argument(
       '--minHandDetectionConfidence',
       help='The minimum confidence score for hand detection to be considered '
@@ -338,19 +345,23 @@ def main():
       help='Size of the consensus window',
       required=False,
       default=5)
+  parser.add_argument(
+      '--minRecognitionConfidence',
+      help='The minimum confidence score for a predicted gesture',
+      required=False,
+      default=0.7)
   args = parser.parse_args()
 
   if not (isinstance(args.cameraId, str) and args.cameraId.startswith('http')):
     args.cameraId = int(args.cameraId)
 
-  initialize_websocket()
-
   run(args.model, int(args.numHands), float(args.minHandDetectionConfidence),
       args.minHandPresenceConfidence, args.minTrackingConfidence,
-      args.cameraId, args.frameWidth, args.frameHeight, int(args.consensusWindow))
+      args.cameraId, args.frameWidth, args.frameHeight, int(args.consensusWindow),
+      int(args.minRecognitionConfidence))
   
   if ws.connected:
-     ws.close()
+     ws.shutdown()
 
 if __name__ == '__main__':
   main()
