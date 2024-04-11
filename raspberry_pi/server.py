@@ -3,6 +3,7 @@ import websockets
 import socket
 
 HOST_NAME = socket.gethostbyname(socket.gethostname())
+HOST_NAME = '0.0.0.0'
 PORT = 8001
 
 # Set to store connected clients
