@@ -2,6 +2,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 import socket
 
 HOST_NAME = socket.gethostbyname(socket.gethostname())
+HOST_NAME = '0.0.0.0'
 PORT = 8080
 
 class HTTPHandler(BaseHTTPRequestHandler):
