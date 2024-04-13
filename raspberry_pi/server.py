@@ -36,13 +36,16 @@ async def handle_client(websocket, path):
     except websockets.ConnectionClosedError:
         print('client connection timeout')
         connected_clients.remove(websocket)
+    finally:
+        connected_clients.remove(websocket)
+        print('client removed')
 
 
 async def main():
     """
     Start the WebSocket server and listen for incoming connections.
     """
-    async with websockets.serve(handle_client, HOST_NAME, PORT, ping_timeout=100):
+    async with websockets.serve(handle_client, HOST_NAME, PORT, ping_interval=30, ping_timeout=30):
         print(f"WebSocket server started on {HOST_NAME}:{PORT}")
         await asyncio.Future()  # run forever
 
