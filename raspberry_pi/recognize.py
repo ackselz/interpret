@@ -16,14 +16,15 @@
 import argparse
 import sys
 import time
-
+import asyncio
 from collections import deque
 
 import queue
 import threading
 import pyttsx3
 
-import websocket
+import websockets 
+# import websocket
 import socket
 
 import cv2
@@ -47,7 +48,8 @@ PORT = 8001
 
 WEBSOCKET_SERVER_URL = f"ws://{HOST_NAME}:{PORT}" 
 
-ws = websocket.WebSocket()
+# ws = websocket.WebSocket()
+category_queue = asyncio.Queue()
 
 class TTSThread(threading.Thread):
     """
@@ -97,6 +99,28 @@ class TTSThread(threading.Thread):
         """
         self.stop_event.set()
         self.join()
+
+async def websocket_manager(shutdown_event):
+    while not shutdown_event.is_set():
+        try:
+            async with websockets.connect(WEBSOCKET_SERVER_URL, ping_interval=None) as ws:
+                print("Connected to WebSocket server.")
+                await send_messages(ws)
+        except Exception as e:
+            print(f"Error connecting to WebSocket server: {e}")
+            if shutdown_event.is_set():
+                break  
+            await asyncio.sleep(10)
+
+async def send_messages(ws):
+    while True:
+        category_name = await category_queue.get()
+        try:
+            await ws.send(category_name)
+            print(f"Sent: {category_name}")
+        except Exception as e:
+            print(f"Error sending to WebSocket server: {e}")
+            raise #should go to reconnect part of websocket manager
 
 def run(model: str, num_hands: int,
         min_hand_detection_confidence: float,
@@ -174,15 +198,15 @@ def run(model: str, num_hands: int,
         words.append(category_name)
         tts_queue.put(category_name)
 
+        asyncio.run_coroutine_threadsafe(category_queue.put(category_name), asyncio.get_running_loop())
         # Send gesture to WebSocket server
-        if not ws.connected:
-           ws.connect(WEBSOCKET_SERVER_URL)
-
-        try:
-            ws.send(category_name) 
-        except Exception as e:
-            print(f"Error sending to WebSocket server: {e}")
-            ws.shutdown()
+        # if not ws.connected:
+        #    ws.connect(WEBSOCKET_SERVER_URL)
+        # try:
+        #     ws.send(category_name) 
+        # except Exception as e:
+        #     print(f"Error sending to WebSocket server: {e}")
+        #     ws.shutdown()
 
   tts_thread = TTSThread(tts_queue)
 
@@ -294,7 +318,10 @@ def run(model: str, num_hands: int,
 
   tts_thread.stop()
 
-def main():
+async def main():
+  shutdown_event = asyncio.Event()
+  ws_task = asyncio.create_task(websocket_manager(shutdown_event))
+
   parser = argparse.ArgumentParser(
       formatter_class=argparse.ArgumentDefaultsHelpFormatter)
   parser.add_argument(
@@ -361,8 +388,10 @@ def main():
       args.cameraId, args.frameWidth, args.frameHeight, int(args.consensusWindow),
       int(args.minRecognitionConfidence))
   
-  if ws.connected:
-     ws.shutdown()
+#   shutdown_event.set()  
+#   await ws_task 
+#   if ws.connected:
+#      ws.shutdown()
 
 if __name__ == '__main__':
-  main()
+    asyncio.run(main())
