@@ -46,8 +46,62 @@ PORT = 8001
 
 WEBSOCKET_SERVER_URL = f"ws://{HOST_NAME}:{PORT}" 
 
-ws = websocket.WebSocket()
+class WebSocketManager: 
+    def __init__(self, ws_url): 
+        self.ws_url = ws_url
+        self.ws = websocket.WebSocket()
+        self.ws.connect(ws_url)
+        self.last_active = time.time()
+        self.timeout_limit = 10
+        self.interval_check = 7
+        self.running = True
+        
+    
+    def monitor_connection(self): 
+        while self.running: 
+            time.sleep(self.interval_check)
+            if time.time() - self.last_active > self.timeout_limit: 
+                try: 
+                    self.ws.ping('keepalive')
+                    self.last_active = time.time()
+                except websocket.WebSocketConnectionClosedException: 
+                   print('connection closed')
+                   self.reconnect()
+                except Exception as e:
+                   print(f'Exception occured {e}') 
+                   self.reconnect()
+    
+    def send_message(self, message): 
+        try:
+            self.ws.send(message)
+            self.last_active = time.time()
+        except Exception as e: 
+           print(f'Failed to send message {e}')
+    
+    def stop(self): 
+        self.running = False  
+        self.ws.close()
 
+    def reconnect(self):
+        try:
+            self.ws.close()
+        except Exception:
+            pass  
+        while self.running:
+            try:
+                self.ws.connect(self.ws_url)
+                print("Reconnected to the WebSocket server.")
+                self.last_active = time.time()
+                break
+            except Exception as e:
+                print(f"Failed to reconnect: {e}")
+                time.sleep(5)  
+          
+manager = WebSocketManager(WEBSOCKET_SERVER_URL)
+monitor_thread = threading.Thread(target=manager.monitor_connection)
+monitor_thread.start()
+
+    
 class TTSThread(threading.Thread):
     """
     A thread-safe class for handling text-to-speech (TTS) functionality.
@@ -174,14 +228,11 @@ def run(model: str, num_hands: int,
         tts_queue.put(category_name)
 
         # Send gesture to WebSocket server
-        if not ws.connected:
-           ws.connect(WEBSOCKET_SERVER_URL)
+        # if not ws.connected:
+        #    ws.connect(WEBSOCKET_SERVER_URL)
 
-        try:
-            ws.send(category_name) 
-        except Exception as e:
-            print(f"Error sending to WebSocket server: {e}")
-            ws.shutdown()
+        manager.send_message(category_name)
+
 
   tts_thread = TTSThread(tts_queue)
 
@@ -293,7 +344,7 @@ def run(model: str, num_hands: int,
 
   tts_thread.stop()
 
-def main():
+def main():  
   parser = argparse.ArgumentParser(
       formatter_class=argparse.ArgumentDefaultsHelpFormatter)
   parser.add_argument(
@@ -360,8 +411,8 @@ def main():
       args.cameraId, args.frameWidth, args.frameHeight, int(args.consensusWindow),
       int(args.minRecognitionConfidence))
   
-  if ws.connected:
-     ws.shutdown()
+  manager.stop()
+  monitor_thread.join()
 
 if __name__ == '__main__':
-  main()
+    main()

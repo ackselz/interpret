@@ -42,7 +42,7 @@ async def main():
     """
     Start the WebSocket server and listen for incoming connections.
     """
-    async with websockets.serve(handle_client, HOST_NAME, PORT, ping_timeout=100):
+    async with websockets.serve(handle_client, HOST_NAME, PORT, ping_timeout=float('inf'), ping_interval=10):
         print(f"WebSocket server started on {HOST_NAME}:{PORT}")
         await asyncio.Future()  # run forever
 
