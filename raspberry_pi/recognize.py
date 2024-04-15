@@ -87,7 +87,7 @@ class TTSThread(threading.Thread):
         while not self.stop_event.is_set():
             try:
                 data = self.queue.get(block=True, timeout=0.1)
-                self.tts_engine.say(data)
+                self.tts_engine.say(r'\piv{1000}' + data)
                 self.tts_engine.iterate()
             except queue.Empty:
                 self.tts_engine.iterate()
@@ -200,7 +200,7 @@ def run(
 
             word = CATEGORY_NAME_TO_WORD[category_name]
 
-            tts_queue.put('test ' + word)
+            tts_queue.put(r'\piv{1000}' + word)
 
             # Send gesture to WebSocket server
             if not ws.connected:
