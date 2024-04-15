@@ -200,7 +200,7 @@ def run(
 
             word = CATEGORY_NAME_TO_WORD[category_name]
 
-            tts_queue.put(word)
+            tts_queue.put('test ' + word)
 
             # Send gesture to WebSocket server
             if not ws.connected:
