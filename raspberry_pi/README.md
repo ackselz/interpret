@@ -29,9 +29,9 @@ python3 recognize.py \
 ```bash
 # /raspberry_pi
 
-python3 raspberry_pi/recognize.py \
-    --model ../Models/20240411_gesture_recognizer_4.task
-    --cameraId 'http://192.168.51.18:81/stream'
+python3 recognize.py \
+    --model ../Models/20240411_gesture_recognizer_4.task \
+    --cameraId 'http://192.168.12.18:81/stream'
 ```
 
 # MediaPipe Gesture Recognizer example with Raspberry Pi
