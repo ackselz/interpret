@@ -12,7 +12,7 @@ CATEGORY_LIST = [
         # -----
         # "PLEASE",
         # "TIRED",
-        "WIFI",
+        "WHERE",
         # "HOW",
         # "SCHOOL",
     ]  #Number of words/phrases to train

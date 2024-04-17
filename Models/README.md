@@ -18,3 +18,5 @@
 20240411_gesture_recognizer_2.task ['please', 'tired', 'connect', 'whatsup', 'cannot', 'none', 'thankyou', 'seat', 'help', 'where', 'rock', 'i'] tuned
 20240411_gesture_recognizer_3.task ['please', 'tired', 'connect', 'whatsup', 'cannot', 'wifi', 'none', 'thankyou', 'seat', 'help', 'where', 'rock', 'i']
 20240411_gesture_recognizer_4.task ['please', 'tired', 'connect', 'whatsup', 'cannot', 'wifi', 'none', 'thankyou', 'seat', 'help', 'where', 'rock', 'i'] tuned
+
+20240417_gesture_recognizer.task ['help', 'seat', 'rock', 'tired', 'connect', 'whatsup', 'cannot', 'none', 'where', 'please', 'wifi', 'i', 'thankyou'] tuned
