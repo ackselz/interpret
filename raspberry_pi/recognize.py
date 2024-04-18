@@ -56,12 +56,13 @@ CATEGORY_NAME_TO_WORD = {
 }
 
 HOST_NAME = "0.0.0.0"
-PORT = 8001
+# PORT = 8001
+PORT = 3000
 
-WEBSOCKET_SERVER_URL = f"ws://{HOST_NAME}:{PORT}"
+# WEBSOCKET_SERVER_URL = f"ws://{HOST_NAME}:{PORT}"
+WEBSOCKET_SERVER_URL = 'ws://interpret.fly.dev'
 
 ws = websocket.WebSocket()
-
 
 class TTSThread(threading.Thread):
     """
@@ -204,13 +205,14 @@ def run(
 
             # Send gesture to WebSocket server
             if not ws.connected:
-                ws.connect(WEBSOCKET_SERVER_URL)
+                ws.connect(WEBSOCKET_SERVER_URL, timeout=10000)
 
             try:
                 ws.send(word)
             except Exception as e:
                 print(f"Error sending to WebSocket server: {e}")
                 ws.shutdown()
+                ws.connect(WEBSOCKET_SERVER_URL, timeout=10000)
 
     tts_thread = TTSThread(tts_queue)
 

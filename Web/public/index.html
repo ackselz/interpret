@@ -1,0 +1,60 @@
+<html lang="en">
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 4rem;
+            font-family: monospace;
+        }
+        #data {
+            padding: 4rem;
+        }
+    </style>
+    <body>
+        <div id="data">></div>
+        <script>
+            var serverUrl;
+            var scheme = "ws";
+
+            if (location.protocol === "https:") {
+                scheme += "s";
+            }
+
+            serverUrl = `${scheme}://${location.hostname}:${location.port}`;
+
+            console.log(serverUrl);
+
+            const ws = new WebSocket(serverUrl);
+
+            const pingInterval = setInterval(() => {
+                ws.send("ping");
+            }, 30000); // Send a ping message every 30 seconds
+
+            // Web Speech API
+            const synth = window.speechSynthesis;
+
+            // Create a new SpeechSynthesisUtterance instance
+            const utterance = new SpeechSynthesisUtterance();
+
+            ws.addEventListener("message", ({ data }) => {
+                if (data === "pong") return;
+                const currentContent =
+                    document.getElementById("data").innerHTML;
+                document.getElementById("data").innerHTML =
+                    currentContent + " " + data;
+
+                // Set the text to be spoken
+                utterance.text = data;
+
+                // Speak the text
+                synth.speak(utterance);
+            });
+
+            // Handle WebSocket close event
+            ws.addEventListener("close", () => {
+                clearInterval(pingInterval); // Stop sending ping messages
+            });
+        </script>
+    </body>
+</html>
