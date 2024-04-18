@@ -10,6 +10,8 @@ const server = new WebSocket.Server({ server: app.listen(port) });
 
 server.on('connection', (socket) => {
   socket.on('message', (msg) => {
+    if (message === 'ping') return;
+
     server.clients.forEach(client => {
       client.send(msg);
     })
