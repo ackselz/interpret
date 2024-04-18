@@ -356,7 +356,7 @@ def main():
         "--model",
         help="Name of gesture recognition model.",
         required=False,
-        default="gesture_recognizer.task",
+        default="20240417_gesture_recognizer.task",
     )
     parser.add_argument(
         "--numHands",
