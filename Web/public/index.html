@@ -31,12 +31,24 @@
                 ws.send("ping");
             }, 30000); // Send a ping message every 30 seconds
 
+            // Web Speech API
+            const synth = window.speechSynthesis;
+
+            // Create a new SpeechSynthesisUtterance instance
+            const utterance = new SpeechSynthesisUtterance();
+
             ws.addEventListener("message", ({ data }) => {
                 if (data === "pong") return;
                 const currentContent =
                     document.getElementById("data").innerHTML;
                 document.getElementById("data").innerHTML =
                     currentContent + " " + data;
+
+                // Set the text to be spoken
+                utterance.text = data;
+
+                // Speak the text
+                synth.speak(utterance);
             });
 
             // Handle WebSocket close event
