@@ -29,26 +29,21 @@
 
             const pingInterval = setInterval(() => {
                 ws.send("ping");
-            }, 30000); // Send a ping message every 30 seconds
+            }, 5000); // Send a ping message every 5 seconds
 
-            // Web Speech API
-            const synth = window.speechSynthesis;
-
-            // Create a new SpeechSynthesisUtterance instance
-            const utterance = new SpeechSynthesisUtterance();
 
             ws.addEventListener("message", ({ data }) => {
-                if (data === "pong") return;
+                if (data === "ping" || data === "pong") return;
+
                 const currentContent =
                     document.getElementById("data").innerHTML;
                 document.getElementById("data").innerHTML =
                     currentContent + " " + data;
 
-                // Set the text to be spoken
-                utterance.text = data;
-
-                // Speak the text
-                synth.speak(utterance);
+                // Play the audio directly from the /{word}.mp3 route
+                const audioUrl = `/${data}.mp3`; // Construct the URL for the mp3 file
+                const audio = new Audio(audioUrl); // Create a new audio object with the URL
+                audio.play(); // Play the audio file
             });
 
             // Handle WebSocket close event

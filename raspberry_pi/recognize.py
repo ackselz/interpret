@@ -201,18 +201,18 @@ def run(
 
             word = CATEGORY_NAME_TO_WORD[category_name]
 
-            tts_queue.put(word)
+            # tts_queue.put(word)
 
             # Send gesture to WebSocket server
             if not ws.connected:
-                ws.connect(WEBSOCKET_SERVER_URL, timeout=10000)
+                ws.connect(WEBSOCKET_SERVER_URL, timeout=1000000)
 
             try:
                 ws.send(word)
             except Exception as e:
                 print(f"Error sending to WebSocket server: {e}")
                 ws.shutdown()
-                ws.connect(WEBSOCKET_SERVER_URL, timeout=10000)
+                ws.connect(WEBSOCKET_SERVER_URL, timeout=1000000)
 
     tts_thread = TTSThread(tts_queue)
 

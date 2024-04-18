@@ -9,11 +9,6 @@ console.log("Server started on port " + port)
 const server = new WebSocket.Server({ server: app.listen(port) });
 
 server.on('connection', (socket) => {
-  socket.on('ping', () => {
-    console.log('Received ping');
-    ws.pong();
-  });
-
   socket.on('message', (msg) => {
     server.clients.forEach(client => {
       client.send(msg);
