@@ -19,10 +19,6 @@ import time
 
 from collections import deque
 
-import queue
-import threading
-import pyttsx3
-
 import websocket
 
 import cv2
@@ -63,56 +59,6 @@ PORT = 3000
 WEBSOCKET_SERVER_URL = 'ws://interpret.fly.dev'
 
 ws = websocket.WebSocket()
-
-class TTSThread(threading.Thread):
-    """
-    A thread-safe class for handling text-to-speech (TTS) functionality.
-    """
-
-    def __init__(self, queue):
-        """
-        Initialize the TTSThread object.
-        """
-        super().__init__()
-        self.queue = queue
-        self.daemon = True
-        self.tts_engine = pyttsx3.init()
-        self.tts_engine.startLoop(False)
-        self.stop_event = threading.Event()
-        self.start()
-
-    def run(self):
-        """
-        Run the thread's main loop.
-        """
-        while not self.stop_event.is_set():
-            try:
-                data = self.queue.get(block=True, timeout=0.1)
-                self.tts_engine.say(data)
-                self.tts_engine.iterate()
-            except queue.Empty:
-                self.tts_engine.iterate()
-            except Exception as e:
-                print(f"Error in TTSThread: {e}")
-
-        self.tts_engine.endLoop()
-
-    def say(self, text):
-        """
-        Add text to the queue for text-to-speech conversion.
-
-        Args:
-            text (str): The text to be converted to speech.
-        """
-        self.queue.put(text)
-
-    def stop(self):
-        """
-        Stop the TTSThread by setting the stop event.
-        """
-        self.stop_event.set()
-        self.join()
-
 
 def run(
     model: str,
@@ -179,7 +125,6 @@ def run(
         COUNTER += 1
 
     consensus = deque(maxlen=consensus_window)
-    tts_queue = queue.Queue()
     detections = []
 
     def process_result(category_name, score):
@@ -201,8 +146,6 @@ def run(
 
             word = CATEGORY_NAME_TO_WORD[category_name]
 
-            # tts_queue.put(word)
-
             # Send gesture to WebSocket server
             if not ws.connected:
                 ws.connect(WEBSOCKET_SERVER_URL, timeout=1000000)
@@ -213,8 +156,6 @@ def run(
                 print(f"Error sending to WebSocket server: {e}")
                 ws.shutdown()
                 ws.connect(WEBSOCKET_SERVER_URL, timeout=1000000)
-
-    tts_thread = TTSThread(tts_queue)
 
     # Initialize the gesture recognizer model
     base_options = python.BaseOptions(model_asset_path=model)
@@ -346,8 +287,6 @@ def run(
     recognizer.close()
     cap.release()
     cv2.destroyAllWindows()
-
-    tts_thread.stop()
 
 
 def main():
