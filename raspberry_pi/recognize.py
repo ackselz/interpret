@@ -60,7 +60,7 @@ HOST_NAME = "0.0.0.0"
 PORT = 3000
 
 # WEBSOCKET_SERVER_URL = f"ws://{HOST_NAME}:{PORT}"
-WEBSOCKET_SERVER_URL = 'ws://interpret-ws.fly.dev'
+WEBSOCKET_SERVER_URL = 'ws://interpret.fly.dev'
 
 ws = websocket.WebSocket()
 
