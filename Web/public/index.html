@@ -10,9 +10,22 @@
         #data {
             padding: 4rem;
         }
+        #reset_button {
+            position: fixed; /* Changed from 'absolute' to 'fixed' */
+            bottom: 20px; /* 20px from the bottom of the viewport */
+            right: 20px; /* 20px from the right of the viewport */
+            padding: 10px 20px; /* Padding for better button size */
+            font-size: 1rem; /* Adjust font size for better readability */
+            cursor: pointer; /* Changes the mouse cursor to pointer on hover */
+        }
     </style>
     <body>
-        <div id="data">></div>
+        <div id="data">
+        > aoifjoiajfoejfojsdflawejfoij aosdjfoawejf aoejfoaiwjfoeaijfoa ajfeoiajf 
+        </div>
+        <div>
+            <button id="reset_button">Clear Page/button>
+        </div>
         <script>
             var serverUrl;
             var scheme = "ws";
@@ -49,6 +62,12 @@
             // Handle WebSocket close event
             ws.addEventListener("close", () => {
                 clearInterval(pingInterval); // Stop sending ping messages
+            });
+
+           currentButton = document.getElementById('reset_button');
+            dataField = document.getElementById("data");
+            currentButton.addEventListener('click', function() { 
+                dataField.innerHTML = ">";
             });
         </script>
     </body>
